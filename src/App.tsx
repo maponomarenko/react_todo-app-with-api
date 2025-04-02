@@ -1,8 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
 import React, { useEffect, useMemo, useState } from 'react';
-import { TransitionGroup, CSSTransition } from 'react-transition-group';
-import { Error, Footer, NewTodo, TodoItem, TodoList } from './components';
+import { Error, Footer, NewTodo, TodoList } from './components';
 import * as todoActions from './api/todos';
 import { Todo } from './types/Todo';
 import { FilterOptions } from './types/FilterOptions';
@@ -143,29 +142,15 @@ export const App: React.FC = () => {
 
         {visibleTodos && (
           <section className="todoapp__main" data-cy="TodoList">
-            <TransitionGroup>
-              <>
-                <TodoList
-                  visibleTodos={visibleTodos}
-                  handleDeleteTodo={handleDeleteTodo}
-                  updateTodo={updateTodo}
-                  todosBeingProcessed={todosBeingProcessed}
-                  setErrorMessage={setErrorMessage}
-                />
-                {creating && (
-                  <CSSTransition key={0} timeout={300} classNames="temp-item">
-                    <TodoItem
-                      todo={{
-                        id: 0,
-                        title: inputValue,
-                        completed: false,
-                        userId: 2500,
-                      }}
-                    />
-                  </CSSTransition>
-                )}
-              </>
-            </TransitionGroup>
+            <TodoList
+              visibleTodos={visibleTodos}
+              handleDeleteTodo={handleDeleteTodo}
+              updateTodo={updateTodo}
+              todosBeingProcessed={todosBeingProcessed}
+              setErrorMessage={setErrorMessage}
+              creating={creating}
+              inputValue={inputValue}
+            />
           </section>
         )}
 

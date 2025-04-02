@@ -1,6 +1,6 @@
 import { Todo } from '../types/Todo';
 import { TodoItem } from '../components';
-import { CSSTransition } from 'react-transition-group';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
 
 interface Props {
   visibleTodos: Todo[];
@@ -8,6 +8,8 @@ interface Props {
   updateTodo: (todo: Todo) => Promise<void>;
   todosBeingProcessed: number[];
   setErrorMessage: (arg: string) => void;
+  creating: boolean;
+  inputValue: string;
 }
 
 export const TodoList: React.FC<Props> = ({
@@ -16,16 +18,34 @@ export const TodoList: React.FC<Props> = ({
   updateTodo,
   todosBeingProcessed,
   setErrorMessage,
-}: Props) =>
-  visibleTodos.map(todo => (
-    <CSSTransition key={0} timeout={300} classNames="item">
-      <TodoItem
-        todo={todo}
-        key={todo.id}
-        handleDeleteTodo={handleDeleteTodo}
-        updateTodo={updateTodo}
-        todosBeingProcessed={todosBeingProcessed}
-        setErrorMessage={setErrorMessage}
-      />
-    </CSSTransition>
-  ));
+  creating,
+  inputValue,
+}: Props) => {
+  return (
+    <TransitionGroup>
+      {visibleTodos.map(todo => (
+        <CSSTransition key={todo.id} timeout={300} classNames="item">
+          <TodoItem
+            todo={todo}
+            handleDeleteTodo={handleDeleteTodo}
+            updateTodo={updateTodo}
+            todosBeingProcessed={todosBeingProcessed}
+            setErrorMessage={setErrorMessage}
+          />
+        </CSSTransition>
+      ))}
+      {creating && (
+        <CSSTransition key={0} timeout={300} classNames="temp-item">
+          <TodoItem
+            todo={{
+              id: 0,
+              title: inputValue,
+              completed: false,
+              userId: 2500,
+            }}
+          />
+        </CSSTransition>
+      )}
+    </TransitionGroup>
+  );
+};
