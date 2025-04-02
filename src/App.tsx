@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
 import { Error, Footer, NewTodo, TodoItem, TodoList } from './components';
 import * as todoActions from './api/todos';
 import { Todo } from './types/Todo';
@@ -10,11 +11,10 @@ export const App: React.FC = () => {
   const [currentTodoList, setCurrentTodoList] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [activeFilter, setActiveFilter] = useState(FilterOptions.ALL);
-  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [isInputDisabled, setIsInputDisabled] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [todosBeingDeleted, setTodosBeingDeleted] = useState<number[]>([]);
-  const [todosBeingLoaded, setTodosBeingLoaded] = useState<number[]>([]);
+  const [todosBeingProcessed, setTodosBeingProcessed] = useState<number[]>([]);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     todoActions
@@ -33,34 +33,33 @@ export const App: React.FC = () => {
     userId,
     completed,
   }: Omit<Todo, 'id'>) => {
-    const tempTodoItem: Todo = { id: 0, title, userId, completed };
-
-    setTempTodo(tempTodoItem);
-
+    setCreating(true);
     setIsInputDisabled(true);
 
     try {
-      const newTodo = await todoActions.createTodo({
+      const serverNewTodo = await todoActions.createTodo({
         title,
         userId,
         completed,
       });
 
-      setCurrentTodoList(currentTodos => [...currentTodos, newTodo]);
-      setTempTodo(null);
+      setCurrentTodoList(currentTodos => [...currentTodos, serverNewTodo]);
       setInputValue('');
     } catch (error) {
+      setCurrentTodoList(currentTodos =>
+        currentTodos.filter(todo => todo.id !== 0),
+      );
       setErrorMessage('Unable to add a todo');
       setTimeout(() => setErrorMessage(''), 3000);
-      setTempTodo(null);
     } finally {
+      setCreating(false);
       setIsInputDisabled(false);
     }
   };
 
   const handleDeleteTodo = async (postId: number) => {
     setIsInputDisabled(true);
-    setTodosBeingDeleted(currentArray => [...currentArray, postId]);
+    setTodosBeingProcessed(currentArray => [...currentArray, postId]);
 
     try {
       await todoActions.deleteTodo(postId);
@@ -75,7 +74,7 @@ export const App: React.FC = () => {
       setErrorMessage('Unable to delete a todo');
       setTimeout(() => setErrorMessage(''), 3000);
       setCurrentTodoList(currentTodos => currentTodos);
-      setTodosBeingDeleted([]);
+      setTodosBeingProcessed([]);
 
       throw new Error('error');
     }
@@ -83,7 +82,7 @@ export const App: React.FC = () => {
 
   const updateTodo = async (updatedTodo: Todo) => {
     try {
-      setTodosBeingLoaded(currentArray => [...currentArray, updatedTodo.id]);
+      setTodosBeingProcessed(currentArray => [...currentArray, updatedTodo.id]);
 
       const updatedTodoFromServer = await todoActions.editTodo(updatedTodo);
 
@@ -98,7 +97,7 @@ export const App: React.FC = () => {
 
       throw new Error('error');
     } finally {
-      setTodosBeingLoaded([]);
+      setTodosBeingProcessed([]);
     }
   };
 
@@ -112,16 +111,20 @@ export const App: React.FC = () => {
     setActiveFilter(newFilter);
   };
 
-  const visibleTodos = currentTodoList.filter(todo => {
-    switch (activeFilter) {
-      case FilterOptions.ACTIVE:
-        return !todo.completed;
-      case FilterOptions.COMPLETED:
-        return todo.completed;
-      default:
-        return true;
-    }
-  });
+  const visibleTodos = useMemo(
+    () =>
+      currentTodoList.filter(todo => {
+        switch (activeFilter) {
+          case FilterOptions.ACTIVE:
+            return !todo.completed;
+          case FilterOptions.COMPLETED:
+            return todo.completed;
+          default:
+            return true;
+        }
+      }),
+    [activeFilter, currentTodoList],
+  );
 
   return (
     <div className="todoapp">
@@ -140,17 +143,29 @@ export const App: React.FC = () => {
 
         {visibleTodos && (
           <section className="todoapp__main" data-cy="TodoList">
-            <>
-              <TodoList
-                visibleTodos={visibleTodos}
-                handleDeleteTodo={handleDeleteTodo}
-                todosBeingDeleted={todosBeingDeleted}
-                updateTodo={updateTodo}
-                todosBeingLoaded={todosBeingLoaded}
-                setErrorMessage={setErrorMessage}
-              />
-              {tempTodo && <TodoItem todo={tempTodo} tempTodo={tempTodo} />}
-            </>
+            <TransitionGroup>
+              <>
+                <TodoList
+                  visibleTodos={visibleTodos}
+                  handleDeleteTodo={handleDeleteTodo}
+                  updateTodo={updateTodo}
+                  todosBeingProcessed={todosBeingProcessed}
+                  setErrorMessage={setErrorMessage}
+                />
+                {creating && (
+                  <CSSTransition key={0} timeout={300} classNames="temp-item">
+                    <TodoItem
+                      todo={{
+                        id: 0,
+                        title: inputValue,
+                        completed: false,
+                        userId: 2500,
+                      }}
+                    />
+                  </CSSTransition>
+                )}
+              </>
+            </TransitionGroup>
           </section>
         )}
 

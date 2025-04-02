@@ -4,21 +4,17 @@ import cn from 'classnames';
 
 interface Props {
   todo: Todo;
-  tempTodo?: Todo;
   handleDeleteTodo?: (todoId: number) => void;
-  todosBeingDeleted?: number[];
   updateTodo?: (todo: Todo) => Promise<void>;
-  todosBeingLoaded?: number[];
+  todosBeingProcessed?: number[];
   setErrorMessage?: (arg: string) => void;
 }
 
 export const TodoItem: React.FC<Props> = ({
   todo,
   handleDeleteTodo = () => {},
-  tempTodo,
-  todosBeingDeleted,
   updateTodo,
-  todosBeingLoaded,
+  todosBeingProcessed,
   setErrorMessage = () => {},
 }: Props) => {
   const { id, title, completed } = todo;
@@ -127,7 +123,7 @@ export const TodoItem: React.FC<Props> = ({
             placeholder="Empty todo will be deleted"
             ref={todoTitleInput}
             value={updatedTodoTitle}
-            disabled={todosBeingLoaded?.includes(id)}
+            disabled={todosBeingProcessed?.includes(id)}
             onChange={event => setUpdatedTodoTitle(event.target.value)}
           />
         </form>
@@ -154,15 +150,10 @@ export const TodoItem: React.FC<Props> = ({
       <div
         data-cy="TodoLoader"
         className={cn('modal overlay', {
-          'is-active':
-            tempTodo ||
-            todosBeingDeleted?.includes(id) ||
-            todosBeingLoaded?.includes(id),
+          'is-active': todo.id === 0 || todosBeingProcessed?.includes(id),
         })}
       >
-        {(tempTodo ||
-          todosBeingDeleted?.includes(id) ||
-          todosBeingLoaded?.includes(id)) && (
+        {(todo.id === 0 || todosBeingProcessed?.includes(id)) && (
           <div className="modal-background has-background-white-ter" />
         )}
         <div className="loader" />

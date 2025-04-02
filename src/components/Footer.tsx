@@ -1,6 +1,7 @@
 import { FilterOptions } from '../types/FilterOptions';
 import { Todo } from '../types/Todo';
 import { Filter } from '../components';
+import { useMemo } from 'react';
 
 interface Props {
   currentTodoList: Todo[];
@@ -18,7 +19,10 @@ export const Footer = ({
   const areAllTodosDone = currentTodoList.every(
     (todo: Todo) => !todo.completed,
   );
-  const activeTodos = currentTodoList.filter(todo => !todo.completed);
+  const activeTodos = useMemo(
+    () => currentTodoList.filter(todo => !todo.completed),
+    [currentTodoList],
+  );
 
   return (
     <footer className="todoapp__footer" data-cy="Footer">
